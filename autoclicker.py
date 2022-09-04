@@ -14,8 +14,7 @@ import time
 # because click() waits for AUTOCLICK_CLICK_INTERVAL seconds after each click
 # The maximum time isn't straightforward to determine 
 # but in practice the time between stopping the autoclicker and it stops autoclicking 
-# is soon after AUTOCLICK_CLICK_TIME seconds has passed 
-# and depends on AUTOCLICK_CLICK_TIME
+# is between 0 seconds and soon after AUTOCLICK_CLICK_TIME seconds has passed 
 AUTOCLICK_CLICK_TIME = 1
 AUTOCLICK_CLICKS_PER_SECOND = 15
 # Time in seconds between clicks for autoclicker
