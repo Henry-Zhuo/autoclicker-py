@@ -1,0 +1,3 @@
+- Make this project into a pip module for easier importing into Python projects
+
+- Add requirements.txt for pip
