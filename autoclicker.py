@@ -20,6 +20,7 @@ AUTOCLICK_CLICKS_PER_SECOND = 15
 # Time in seconds between clicks for autoclicker
 AUTOCLICK_CLICK_INTERVAL = 1 / AUTOCLICK_CLICKS_PER_SECOND
 AUTOCLICK_COUNT = int(AUTOCLICK_CLICK_TIME / AUTOCLICK_CLICK_INTERVAL)
+AUTOCLICK_HOTKEY = 'f1+5'
 
 autoclick_enabled = multiprocessing.Value(ctypes.c_bool, False)
 autoclick_loop_condition_lock = multiprocessing.Condition()
@@ -55,3 +56,13 @@ def toggle_autoclicker():
 def init():
     autoclick_thread = multiprocessing.Process(target=__autoclick, args=(autoclick_enabled, autoclick_loop_condition_lock))
     autoclick_thread.start()
+
+
+
+def main():
+    init()
+    keyboard.add_hotkey(AUTOCLICK_HOTKEY, toggle_autoclicker, suppress=True)
+
+
+if __name__ == '__main__':
+    main()
