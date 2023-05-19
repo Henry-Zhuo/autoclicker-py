@@ -16,52 +16,50 @@ import time
 # but in practice the time between stopping the autoclicker and it stops autoclicking 
 # is between 0 seconds and soon after AUTOCLICK_CLICK_TIME seconds has passed 
 AUTOCLICK_CLICK_TIME = 1
-AUTOCLICK_CLICKS_PER_SECOND = 15
+AUTOCLICK_CLICKS_PER_SECOND = 21
 # Time in seconds between clicks for autoclicker
 AUTOCLICK_CLICK_INTERVAL = 1 / AUTOCLICK_CLICKS_PER_SECOND
 AUTOCLICK_COUNT = int(AUTOCLICK_CLICK_TIME / AUTOCLICK_CLICK_INTERVAL)
-AUTOCLICK_HOTKEY = 'f1+5'
+AUTOCLICK_HOTKEY = '1'
+HOTKEY_START_SEQUENCE = 'f7'
+ESCAPE_MACRO_START_SEQUENCE = 'esc'
 
-autoclick_enabled = multiprocessing.Value(ctypes.c_bool, False)
-autoclick_loop_condition_lock = multiprocessing.Condition()
+idle_autoclick_thread = None
+running_autoclick_thread = multiprocessing.Process()
 
 
 
-def __autoclick(autoclick_enabled, autoclick_loop_condition_lock):
+def __autoclick():
     while True:
-        # Checking a single variable is probably 
-        # faster than acquiring a lock and waiting for it to release
-        if autoclick_enabled.value:
-            pyautogui.click(clicks=AUTOCLICK_COUNT, interval=AUTOCLICK_CLICK_INTERVAL)
-        else:
-            # Wait on the lock to release
-            autoclick_loop_condition_lock.acquire()
-            autoclick_loop_condition_lock.wait()
-            autoclick_loop_condition_lock.release()
+        pyautogui.click(clicks=AUTOCLICK_COUNT, interval=AUTOCLICK_CLICK_INTERVAL)
 
 
 
 def toggle_autoclicker():
-    global autoclick_enabled
-    autoclick_enabled.value = not autoclick_enabled.value
+    global idle_autoclick_thread
+    global running_autoclick_thread
 
-    if autoclick_enabled.value:
-        # Unblock the autoclicker
-        autoclick_loop_condition_lock.acquire()
-        autoclick_loop_condition_lock.notify_all()
-        autoclick_loop_condition_lock.release()
-
-
-
-def init():
-    autoclick_thread = multiprocessing.Process(target=__autoclick, args=(autoclick_enabled, autoclick_loop_condition_lock))
-    autoclick_thread.start()
+    if running_autoclick_thread.is_alive():
+        running_autoclick_thread.kill()
+        # Should close() process but crashes right after kill and takes time
+    else:
+        idle_autoclick_thread.start()
+        running_autoclick_thread = idle_autoclick_thread
+        idle_autoclick_thread = multiprocessing.Process(target=__autoclick)
 
 
 
 def main():
-    init()
-    keyboard.add_hotkey(AUTOCLICK_HOTKEY, toggle_autoclicker, suppress=True)
+    global idle_autoclick_thread
+    global running_autoclick_thread
+    idle_autoclick_thread = multiprocessing.Process(target=__autoclick)
+
+    keyboard.add_hotkey(f"{HOTKEY_START_SEQUENCE}+{AUTOCLICK_HOTKEY}", toggle_autoclicker, suppress=True)
+
+    keyboard.add_hotkey(f'{ESCAPE_MACRO_START_SEQUENCE}+{HOTKEY_START_SEQUENCE}', lambda: keyboard.write(HOTKEY_START_SEQUENCE))
+    while True:
+        keyboard.wait(HOTKEY_START_SEQUENCE, suppress=True)
+
 
 
 if __name__ == '__main__':
