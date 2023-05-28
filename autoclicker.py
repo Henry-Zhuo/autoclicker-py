@@ -29,13 +29,14 @@ running_autoclick_thread = multiprocessing.Process()
 
 
 
-def __autoclick():
+def __autoclick(start_sema):
+    start_sema.acquire()
     while True:
         pyautogui.click(clicks=AUTOCLICK_COUNT, interval=AUTOCLICK_CLICK_INTERVAL)
 
 
 
-def toggle_autoclicker():
+def toggle_autoclicker(start_sema):
     global idle_autoclick_thread
     global running_autoclick_thread
 
@@ -43,18 +44,26 @@ def toggle_autoclicker():
         running_autoclick_thread.kill()
         # Should close() process but crashes right after kill and takes time
     else:
-        idle_autoclick_thread.start()
+        start_sema.release()
         running_autoclick_thread = idle_autoclick_thread
-        idle_autoclick_thread = multiprocessing.Process(target=__autoclick)
+        idle_autoclick_thread = new_idle_autoclick_thread(start_sema)
+
+
+
+def new_idle_autoclick_thread(start_sema):
+    idle_autoclick_thread = multiprocessing.Process(target=__autoclick, args=(start_sema,))
+    idle_autoclick_thread.start()
+    return idle_autoclick_thread
 
 
 
 def main():
     global idle_autoclick_thread
     global running_autoclick_thread
-    idle_autoclick_thread = multiprocessing.Process(target=__autoclick)
+    start_sema = multiprocessing.Semaphore(0)
+    idle_autoclick_thread = new_idle_autoclick_thread(start_sema)
 
-    keyboard.add_hotkey(f"{HOTKEY_START_SEQUENCE}+{AUTOCLICK_HOTKEY}", toggle_autoclicker, suppress=True)
+    keyboard.add_hotkey(f"{HOTKEY_START_SEQUENCE}+{AUTOCLICK_HOTKEY}", lambda: toggle_autoclicker(start_sema), suppress=True)
 
     keyboard.add_hotkey(f'{ESCAPE_MACRO_START_SEQUENCE}+{HOTKEY_START_SEQUENCE}', lambda: keyboard.write(HOTKEY_START_SEQUENCE))
     while True:
