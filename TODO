@@ -1,3 +1,5 @@
 - Make this project into a pip module for easier importing into Python projects
 
 - Add requirements.txt for pip
+
+- Separate configuration out into a configuration file that can be gitignored
